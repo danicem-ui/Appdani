@@ -20,7 +20,7 @@
         .btn-success { background: #10b981 !important; color: white !important; }
         .btn-whatsapp { background: var(--whatsapp) !important; color: white !important; border: 1px solid #000 !important; }
         #v-mesas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-        .mesa-btn { background: white; border-radius: 12px; height: 75px; display: flex; flex-direction: column; align-items: center; justify-content: center; user-select: none; -webkit-user-select: none; }
+        .mesa-btn { background: white; border-radius: 12px; height: 75px; display: flex; flex-direction: column; align-items: center; justify-content: center; user-select: none; -webkit-user-select: none; transition: all 0.3s ease; }
         .mesa-btn.ocupada { background: #fee2e2; border: 2px solid #ef4444 !important; color: #ef4444; }
         .calc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         .btn-calc { background: white; border-radius: 12px; height: 65px; font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
@@ -55,7 +55,7 @@
                 </div>
             </div>
             <div id="v-fams" class="view hidden"><button onclick="router.nav('cats')" class="btn-volver">← VOLVER</button><div id="cont-fams" class="grid grid-cols-2 gap-3 mt-2"></div></div>
-            <div id="v-prods" class="view hidden"><button onclick="router.nav('fams')" class="btn-volver">← VOLVER</button><div id="cont-prods" class="mt-2"></div><div class="footer-fixed"><button onclick="router.nav('fams')" class="btn-volver m-0">← VOLVER</button></div></div>
+            <div id="v-prods" class="view hidden"><button onclick="router.nav('fams')" class="btn-volver">← VOLVER</button><div id="cont-prods" class="mt-2"></div><div class="footer-fixed"><button onclick="router.nav('cats')" class="btn-volver">VOLVER AL MENÚ</button></div></div>
             
             <div id="v-cobro" class="view hidden">
                 <button onclick="router.nav('cats')" class="btn-volver">← CANCELAR</button>
@@ -212,7 +212,7 @@
         renderCats() { document.getElementById('cont-cats').innerHTML = this.cats.map(c => `<button onclick="app.renderFams('${c}')" class="btn-action border-black text-xs">${c}</button>`).join(''); },
         renderFams(cat) {
             const fams = [...new Set(this.db.filter(p => p.c === cat).map(p => p.f))];
-            document.getElementById('cont-fams').innerHTML = fams.length ? fams.map(f => `<button onclick="app.renderProds('${cat}','${f}')" class="btn-action bg-blue-50 text-xs">${f}</button>`).join('') : `<div class="p-10 text-center opacity-40">Sin familias</div>`;
+            document.getElementById('cont-fams').innerHTML = fams.length ? fams.map(f => `<button onclick="app.renderProds('${cat}','${f}')" class="btn-action bg-blue-50 text-xs">${f}</button>`).join('') : '<div class="p-10 text-center opacity-40 font-bold">SIN FAMILIAS</div>';
             router.nav('fams');
         },
         renderProds(c, f) {
@@ -239,7 +239,7 @@
             const items = this.comandas[this.mId] || [], total = items.reduce((s, i) => s + i.p, 0);
             document.getElementById('total-display').innerText = total.toFixed(2) + " €";
             const g = items.reduce((a, b) => { a[b.n] = (a[b.n] || 0) + 1; return a; }, {});
-            document.getElementById('resumen-comanda').innerHTML = Object.entries(g).map(([n, q]) => `<div class="flex justify-between border-b border-black border-dotted py-1"><span>${n}</span><span class="font-black">${q}</span></div>`).join('');
+            document.getElementById('resumen-comanda').innerHTML = Object.entries(g).map(([n, q]) => `<div class="flex justify-between border-b border-black border-dotted py-1"><span>${n}</span><span>${q}x - ${(q * this.db.find(p => p.n === n)?.p || 0).toFixed(2)}€</span></div>`).join('');
         },
         soloGuardar(e) { e.preventDefault(); router.nav('mesas'); this.renderMesas(); },
 
@@ -293,7 +293,7 @@
         renderGestCats() {
             document.getElementById('list-cats').innerHTML = this.cats.map((c, i) => `<div class="flex justify-between items-center bg-white p-3 mb-2 border border-black rounded-lg"><b>${c}</b><button onclick="app.borrarCat(${i})" class="text-red-600 font-black">🗑️</button></div>`).join('');
         },
-        addCategory() { const n = document.getElementById('in-cat-name').value.toUpperCase(); if(n && !this.cats.includes(n)) { this.cats.push(n); this.save('cats'); this.refreshSelect(); document.getElementById('in-cat-name').value = ""; this.renderGestCats(); } },
+        addCategory() { const n = document.getElementById('in-cat-name').value.toUpperCase(); if(n && !this.cats.includes(n)) { this.cats.push(n); this.save('cats'); this.refreshSelect(); document.getElementById('in-cat-name').value = ''; this.renderGestCats(); } },
         borrarCat(i) { if(confirm("¿Eliminar?")) { this.cats.splice(i, 1); this.save('cats'); this.refreshSelect(); this.renderGestCats(); } },
 
         limpiarForm() { ['in-n','in-p','in-f'].forEach(id => document.getElementById(id).value = ""); },
@@ -315,7 +315,13 @@
             t += `<hr class="my-2 border-black"><b>TOTAL: ${total.toFixed(2)}€</b>`;
             document.getElementById('t-body').innerHTML = t; router.nav('ticket');
         },
-        cerrarMesa() { this.comandas[this.mId] = []; this.save('comandas'); router.nav('mesas'); this.renderMesas(); },
+        cerrarMesa() { 
+            this.comandas[this.mId] = []; 
+            this.save('comandas'); 
+            this.renderMesas();
+            document.getElementById('total-display').innerText = "0.00 €";
+            router.nav('mesas'); 
+        },
         cierreDiario() { if(confirm("¿Borrar historial?")) { this.ventas = []; this.save('ventas'); this.renderCaja(); } },
 
         enviarCocina() {
