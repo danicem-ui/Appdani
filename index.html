@@ -134,6 +134,7 @@
             const target = document.getElementById('v-' + id);
             if (target) target.classList.remove('hidden');
             window.scrollTo(0, 0);
+            if(id === 'mesas') app.recargarMesas();
         }
     };
 
@@ -170,8 +171,35 @@
         cats: JSON.parse(localStorage.getItem('v4_cats')) || ["BEBIDAS", "PINCHOS", "RACIONES", "CAFÉ"],
         ventas: JSON.parse(localStorage.getItem('v4_ventas')) || [],
         mesas: JSON.parse(localStorage.getItem('v4_mesas')) || Array.from({length: 12}, (_, i) => ({id: i+1, n: (i+1).toString()})),
+        mesasWatcher: null,
 
-        init() { this.renderMesas(); this.refreshSelect(); this.initCalc(); router.nav('mesas'); },
+        init() { 
+            this.renderMesas(); 
+            this.refreshSelect(); 
+            this.initCalc(); 
+            router.nav('mesas');
+            // Vigila cambios en localStorage cada 500ms
+            this.mesasWatcher = setInterval(() => {
+                this.actualizarComandas();
+            }, 500);
+        },
+
+        actualizarComandas() {
+            const nuevasComandas = JSON.parse(localStorage.getItem('v4_comandas')) || {};
+            if(JSON.stringify(nuevasComandas) !== JSON.stringify(this.comandas)) {
+                this.comandas = nuevasComandas;
+                const currentView = document.querySelector('.view:not(.hidden)');
+                if(currentView && currentView.id === 'v-mesas') {
+                    this.renderMesas();
+                }
+            }
+        },
+
+        recargarMesas() {
+            this.comandas = JSON.parse(localStorage.getItem('v4_comandas')) || {};
+            this.renderMesas();
+        },
+
         save(k) { localStorage.setItem('v4_'+k, JSON.stringify(this[k])); },
 
         renderMesas() { 
@@ -318,7 +346,6 @@
         cerrarMesa() { 
             this.comandas[this.mId] = []; 
             this.save('comandas'); 
-            this.renderMesas();
             document.getElementById('total-display').innerText = "0.00 €";
             router.nav('mesas'); 
         },
